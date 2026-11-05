@@ -4,7 +4,10 @@
 
 <p align="center"><img src="docs/lock-flip.gif" width="560" alt="A lock on the live dashboard flips from VULNERABLE to FIXED after Blue's patch is approved"></p>
 
-> 🎥 **Demo video (2 min):** _add link_
+### 🎥 Demo (80 sec)
+
+[▶️ Download the demo video](docs/demo.mp4)
+
 > 🧑‍💻 Built solo by [Barnavo Dey](https://github.com/barnavo05) for **Flip the Switch** (WeMakeDevs x Switch), Nov 2026 · Track 01, Best Business Workflow
 
 ---
