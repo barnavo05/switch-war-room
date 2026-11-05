@@ -5,8 +5,7 @@
 <p align="center"><img src="docs/lock-flip.gif" width="560" alt="A lock on the live dashboard flips from VULNERABLE to FIXED after Blue's patch is approved"></p>
 
 ### 🎥 Demo (80 sec)
-https://github.com/user-attachments/assets/f534104e-8de3-4e29-b295-1701a7d52add
-
+https://github.com/user-attachments/assets/e9495c5e-a3be-48c4-938e-115d6b887a6d
 
 [▶️ Download the demo video](docs/demo.mp4)
 
