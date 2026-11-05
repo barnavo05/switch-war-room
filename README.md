@@ -1,59 +1,69 @@
 # ⚔️ Switch War Room
 
-**Two AI agents fight over a live app in your team chat. One breaks in, one patches it, a third keeps score. You approve every fix.**
+**Two AI agents fight over a live app inside your team chat. One breaks in, one patches it, a third keeps score. Nothing ships until a human types `approve`.**
 
-Most small teams never run a security drill. They don't have a red team, a blue team, or the time. War Room gives you all three as AI agents in a chat room, so a drill becomes something you watch over chai instead of something you schedule for next quarter.
+<p align="center"><img src="docs/lock-flip.gif" width="560" alt="A lock on the live dashboard flips from VULNERABLE to FIXED after Blue's patch is approved"></p>
 
-Built solo for the **Flip the Switch Hackathon** (WeMakeDevs x DevTools Academy x Switch), November 2026.
-
-> 🎥 Demo video: _add link_
-> 📝 Blog post: _add link_
+> 🎥 **Demo video (2 min):** _add link_
+> 🧑‍💻 Built solo by [Barnavo Dey](https://github.com/barnavo05) for **Flip the Switch** (WeMakeDevs x Switch), Nov 2026 · Track 01, Best Business Workflow
 
 ---
 
-## What happens in the room
+## The problem
 
-```
-You (Incident Commander):  start match
-Referee:   ⚔️ Round 1. Target is live, all 5 doors locked... supposedly.
-           @red-team you are cleared to attack.
-Red Team:  Probing product search with a quote character...
-           🔴 CLAIM: SQL injection
-           How: curl "http://127.0.0.1:5050/api/products?q=' UNION SELECT ..."
-           Proof: FLAG{...}
-           @referee verify my claim
-Referee:   Verified. 🔴 Red +1.  @blue-team Incoming: SQLi on /api/products. Patch it.
-Blue Team: Root cause: user input pasted into SQL. Fix: parameterised query.
-           [diff]  🔵 Patch ready. Approve?
-You:       approve
-Blue Team: Applied. @referee please verify.
-Referee:   check.py says 🟢 FIXED, search still works. 🔵 Blue +2.
-           🏆 Red 1 : Blue 2
-```
+Most small teams never run a security drill. There's no red team, no blue team, and no free week to schedule one. So bugs like SQL injection or a forgotten debug endpoint sit in production until someone else finds them.
 
-At the end the Referee writes an **incident report**: what got breached, how, how it was fixed, current status, and lessons for the team.
+War Room turns a drill into a 15 minute match that runs in the chat room your team already lives in. The attacker, the defender and the referee are AI agents. **You stay in charge:** every fix waits for your approval, and every claim is verified by real exploit tests, not by an AI saying "trust me".
+
+## What a match looks like
+
+| 🔴 Red finds a hole and proves it | 🔵 Blue proposes a fix and waits for you |
+|---|---|
+| ![Red Team claims a SQL injection flag](docs/chat-red-claim.jpg) | ![Blue Team posts a diff and asks for approval](docs/chat-blue-patch.jpg) |
+
+The Referee re-runs real exploits after every patch, updates the score, and when all five holes are closed writes an **incident report** with lessons for the team:
+
+![Final scoreboard and incident report in the war-room](docs/chat-final-score.jpg)
+
+And a live **spectator dashboard** so anyone walking past the screen gets it in five seconds:
+
+![Live dashboard: score, five locks, live feed](docs/dashboard.jpg)
 
 ## The cast
 
-| Agent | Role | Sees the code? | Can change code? |
+| Who | Role | Sees the code? | Can change code? |
 |---|---|---|---|
-| 🔴 **Red Team** | Black box attacker. Only gets the URL and a customer login | ❌ Never | ❌ |
-| 🔵 **Blue Team** | Defender. Finds root cause, proposes a diff | ✅ | ✅ only after you approve |
-| 🧑‍⚖️ **Referee** | Runs the match, verifies every claim, keeps score | ✅ | ❌ |
+| 🔴 **Red Team** (agent) | Black box attacker. Gets a URL and a customer login, nothing else | ❌ | ❌ |
+| 🔵 **Blue Team** (agent) | Defender. Finds the root cause, proposes a diff | ✅ | ✅ only after you approve |
+| 🧑‍⚖️ **Referee** (agent) | Runs turns, verifies every claim with `check.py`, keeps score, writes the report | ✅ | ❌ |
 | 🧑 **You** | Incident Commander. Final say on every patch | | |
 
-## How Switch is used (and why it can't work without it)
+## How Switch is used (and why it breaks without it)
 
-Switch is the whole stage, not a plug-in:
-- **One room, three agents, one human.** Switch puts all of them in the same channel with shared history, so Red, Blue and the Referee all read the same timeline of attacks, patches and verdicts. Without a shared room there is no match.
-- **Agents hand work to each other by @mention.** The Referee drives turns by mentioning `@red-team` and `@blue-team`. Switch's addressing (`owner-agents`) lets agents talk to each other while keeping strangers out.
-- **The human gate lives in chat.** Blue proposes, you type `approve` in the same room. No separate dashboard.
-- **Different workspaces per agent.** Through the template, Red gets an empty folder (true black box) while Blue and the Referee work in the project folder.
-- **One file sets it all up.** `switch/war-room.template.yaml` creates the three agents and the room in one click via Switch Console. It passes Switch's own template linter with zero warnings.
+| Switch feature | What it does in War Room | Without it |
+|---|---|---|
+| **Rooms with many agents and humans** | Red, Blue, Referee and you share one channel and one history | No shared timeline, no match |
+| **Agent to agent @mentions** (`owner-agents` addressing) | The Referee hands turns with `@red-team` / `@blue-team`, agents reply to each other | You'd be copy-pasting between three terminals |
+| **Human in the room** | Blue stops and waits for your `approve` in the same chat | The safety gate disappears |
+| **Per-agent working directory** | Red gets an empty folder (true black box), Blue and Referee get the project | Red could just read the source |
+| **Templates** | `switch/war-room.template.yaml` creates all three agents and the room in one import | Manual setup of 3 agents every time |
+| **Bridges** | The same room runs in Mattermost today, Slack or Discord with one setting | Locked to one chat app |
+
+## The referee can't be fooled
+
+`referee/check.py` judges each bug twice:
+1. **Attack:** several exploit variants, not just the obvious one. Blocking the word `UNION` still loses to `UnIoN SeLeCt`.
+2. **Feature test:** search, login, your own orders, your own invoices and the real admin page must keep working.
+
+| Verdict | Meaning | Score |
+|---|---|---|
+| 🔴 VULNERABLE | some variant still leaks the flag | Red can claim a bypass (+2) |
+| 🟢 FIXED | every variant blocked and the feature works | Blue +2 |
+| 🟠 BROKEN | flag blocked, but the feature died with it | Blue -1 |
 
 ## The arena: ChaiCart
 
-A tiny shop API (Flask + SQLite) running in Docker, bound to `127.0.0.1` only. It has five planted vulnerabilities, each guarding a flag:
+A tiny shop API (Flask + SQLite) in Docker, bound to `127.0.0.1` only, with five planted bugs, each guarding a `FLAG{...}`:
 
 | # | Vulnerability | OWASP Top 10 |
 |---|---|---|
@@ -63,61 +73,75 @@ A tiny shop API (Flask + SQLite) running in Docker, bound to `127.0.0.1` only. I
 | 4 | Forgeable auth tokens | A07 Identification and Authentication Failures |
 | 5 | Path traversal on invoices | A01 Broken Access Control |
 
-## The referee can't be fooled
+## Run it yourself (about 10 minutes)
 
-`referee/check.py` judges every bug twice:
-1. **Attack:** several exploit variants, not just the obvious one. Blocking the word `UNION` still loses to `UnIoN`.
-2. **Feature test:** search, login, your own orders, your own invoices, and the real admin page must still work.
-
-| Verdict | Meaning |
-|---|---|
-| 🔴 VULNERABLE | some variant still leaks the flag |
-| 🟢 FIXED | every variant blocked and the feature works |
-| 🟠 BROKEN | flag blocked, but the feature died with it |
-
-## Run it yourself
-
-You need: macOS (Apple silicon or Intel) or Linux, Docker, Switch Console, and Claude Code (or Codex / OpenCode).
+**You need:** Docker Desktop, [Switch Console](https://docs.switchagents.ai/switch-rooms/getting-started), and Claude Code (or Codex / OpenCode). macOS or Linux.
 
 ```bash
-git clone <this repo> && cd switch-war-room
-./scripts/start.sh                 # ChaiCart on http://127.0.0.1:5050
-python3 referee/check.py           # should show 5x 🔴 VULNERABLE
+git clone https://github.com/barnavo05/switch-war-room && cd switch-war-room
+./scripts/start.sh               # ChaiCart on http://127.0.0.1:5050
+python3 referee/check.py         # should show 5x 🔴 VULNERABLE
 ```
 
-Then in **Switch Console**:
+In **Switch Console**:
 1. **Templates > Import template**, pick `switch/war-room.template.yaml`
-2. Set **project_dir** to the absolute path of this folder
-3. Create. The `war-room` room appears with all three agents
-4. In the room, type `start match`
+2. Set **project_dir** to the absolute path of this folder, then **Create**
+3. Open the `war-room` room and type `@referee start match`
+4. Approve each patch with `@blue-team approve`
 
-Reset everything before a new match:
+Optional, in a second terminal, the spectator dashboard:
 ```bash
-./scripts/reset.sh
+./scripts/dashboard.sh           # http://127.0.0.1:8099
 ```
+
+Reset everything before a new match: `./scripts/reset.sh`
+
+**Commands in the room:** `start match` · `approve` · `reject, <reason>` · `pause` / `resume` · `end match`
+
+<details>
+<summary>Troubleshooting</summary>
+
+| Problem | Fix |
+|---|---|
+| `start.sh` says Docker is not running | Open Docker Desktop and wait for "Engine running" |
+| Dashboard says port in use | `DASHBOARD_PORT=9000 ./scripts/dashboard.sh` |
+| Dashboard shows "Arena is offline" | Run `./scripts/start.sh` first |
+| An agent goes quiet | @mention it directly, e.g. `@referee continue` |
+| Want a clean slate | `./scripts/reset.sh` |
+</details>
+
+## Use it on your own app
+
+ChaiCart is the training ground. The same room works on a real staging service:
+1. Point Red at your staging URL in the template (keep it internal, never production)
+2. Point Blue's `project_dir` at your service repo
+3. Write one check per known risk in `referee/check.py` (it's plain Python, standard library only)
+4. Run it as a **weekly drill** in your team's Slack or Discord via a Switch bridge. Every patch still waits for a human
 
 ## Project layout
 
 ```
-arena/            ChaiCart, the vulnerable target (Docker)
-  app/app.py      the code Blue patches
-  pristine/       untouched copy, used by reset
+arena/                ChaiCart, the vulnerable target (Docker)
+  app/app.py          the code Blue patches (reloads live)
+  pristine/           untouched copy, used by reset
 referee/
-  check.py        exploit + feature checks, the source of truth
-  scoreboard.py   score and match log
-  RULES.md        rules of the match
-scripts/          start, stop, reset
+  check.py            exploit + feature checks, the source of truth
+  scoreboard.py       score and match log
+  RULES.md            rules of the match
+dashboard/            live spectator view (standard library server)
+scripts/              start, stop, reset, dashboard
 switch/
-  war-room.template.yaml   the Switch template: 3 agents + room
+  war-room.template.yaml   the Switch template: 3 agents + room + kickoff
+docs/                 screenshots and GIF for this README
 ```
 
 ## Safety
 
-ChaiCart is insecure on purpose. It is bound to `127.0.0.1`, so only your own machine can reach it. Red's instructions forbid any other host, flooding, or reading source. Never deploy the arena anywhere public.
+ChaiCart is insecure on purpose. It only listens on `127.0.0.1`, so nothing outside your machine can reach it. Red's instructions forbid any other host, flooding, or reading source. Blue can only edit `arena/app/`, and only after a human approves. Never deploy the arena anywhere public.
 
 ## What's next
-- Swap ChaiCart for your own staging app and run War Room as a weekly drill
-- A Slack or Discord room so the whole team can spectate
+- Run the room in Slack or Discord so the whole team can spectate
+- A "bypass round" mode where Red gets two tries against every patch
 - More arenas: auth flows, cloud misconfig, LLM prompt injection
 
 ---

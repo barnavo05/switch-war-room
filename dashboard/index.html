@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>War Room Live</title>
+<style>
+  :root{
+    --bg:#070b16; --bg2:#0d1424; --panel:#111a2e; --line:#1e2a44;
+    --ink:#eaf0ff; --mut:#8aa0c8;
+    --red:#ff4d5e; --red-dim:#3a1620;
+    --blue:#4d8dff; --blue-dim:#121f3c;
+    --green:#36d399; --green-dim:#0f2a22; --amber:#ffb020;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:
+      radial-gradient(1200px 600px at 20% -10%, #15213f 0%, transparent 60%),
+      radial-gradient(1200px 600px at 100% 110%, #1a1430 0%, transparent 55%),
+      var(--bg);
+    color:var(--ink); font-family:var(--sans);
+    padding:22px clamp(16px,3vw,40px); min-height:100%;
+    letter-spacing:.2px;
+  }
+  .wrap{max-width:1180px;margin:0 auto}
+
+  header{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+  .live{display:flex;align-items:center;gap:9px;font-weight:800;font-size:15px;letter-spacing:2px}
+  .dot{width:11px;height:11px;border-radius:50%;background:var(--red);box-shadow:0 0 0 0 var(--red);animation:pulse 1.6s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,77,94,.6)}70%{box-shadow:0 0 0 12px rgba(255,77,94,0)}100%{box-shadow:0 0 0 0 rgba(255,77,94,0)}}
+  .title{font-size:clamp(20px,3vw,30px);font-weight:800;margin:0}
+  .title .x{color:var(--mut);font-weight:600}
+  .spacer{flex:1}
+  .badge{font-family:var(--mono);font-size:13px;color:var(--mut);background:var(--panel);
+    border:1px solid var(--line);padding:7px 13px;border-radius:999px}
+  .badge b{color:var(--ink)}
+
+  .scorebar{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:stretch;margin-bottom:18px}
+  .team{background:linear-gradient(180deg,var(--panel),var(--bg2));border:1px solid var(--line);
+    border-radius:18px;padding:18px 20px;position:relative;overflow:hidden}
+  .team.red{border-color:#3a2030;box-shadow:inset 0 0 40px -20px var(--red)}
+  .team.blue{border-color:#1d2c52;box-shadow:inset 0 0 40px -20px var(--blue);text-align:right}
+  .team .who{display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px;letter-spacing:1px}
+  .team.blue .who{justify-content:flex-end}
+  .team .who .tag{width:12px;height:12px;border-radius:3px}
+  .team.red .tag{background:var(--red)} .team.blue .tag{background:var(--blue)}
+  .team .role{color:var(--mut);font-size:12.5px;margin-top:2px}
+  .team.blue .role{}
+  .score{font-family:var(--mono);font-size:clamp(44px,8vw,76px);font-weight:800;line-height:1;margin-top:10px}
+  .team.red .score{color:var(--red)} .team.blue .score{color:var(--blue)}
+  .score.bump{animation:bump .5s}
+  @keyframes bump{0%{transform:scale(1)}30%{transform:scale(1.18)}100%{transform:scale(1)}}
+  .vs{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-width:70px}
+  .vs b{font-size:22px;font-weight:800;color:var(--mut)}
+  .vs .lead{font-size:11px;font-family:var(--mono);color:var(--mut);text-align:center}
+
+  .vaults{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:18px}
+  .vault{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 12px;text-align:center;
+    position:relative;transition:border-color .4s, box-shadow .4s, background .4s}
+  .vault .nm{font-size:12.5px;color:var(--mut);min-height:32px;display:flex;align-items:center;justify-content:center;line-height:1.25}
+  .lock{width:46px;height:46px;margin:6px auto 10px;display:block}
+  .lock .shackle{transition:transform .45s cubic-bezier(.5,1.6,.4,1), stroke .4s;transform-origin:center}
+  .pill{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.5px;padding:4px 9px;border-radius:999px;display:inline-block}
+
+  .vault.vuln{border-color:#3a2030;background:linear-gradient(180deg,var(--panel),#160d16)}
+  .vault.vuln .lock .body{stroke:var(--red);fill:var(--red-dim)}
+  .vault.vuln .lock .shackle{stroke:var(--red);transform:translateX(5px) rotate(14deg)}
+  .vault.vuln .pill{color:var(--red);background:var(--red-dim)}
+  .vault.vuln{animation:tremor 2.4s infinite}
+  @keyframes tremor{0%,94%,100%{transform:translateX(0)}96%{transform:translateX(-1.5px)}98%{transform:translateX(1.5px)}}
+
+  .vault.fixed{border-color:#1b4a3a;background:linear-gradient(180deg,var(--panel),var(--green-dim));box-shadow:0 0 34px -16px var(--green)}
+  .vault.fixed .lock .body{stroke:var(--green);fill:var(--green-dim)}
+  .vault.fixed .lock .shackle{stroke:var(--green);transform:translateX(0) rotate(0)}
+  .vault.fixed .pill{color:var(--green);background:var(--green-dim)}
+
+  .vault.broken{border-color:#4a3a15}
+  .vault.broken .lock .body{stroke:var(--amber);fill:#2a2008}
+  .vault.broken .lock .shackle{stroke:var(--amber);transform:translateX(3px) rotate(8deg)}
+  .vault.broken .pill{color:var(--amber);background:#2a2008}
+
+  .vault.flash{animation:flash .9s}
+  @keyframes flash{0%{box-shadow:0 0 0 0 rgba(54,211,153,.0)}25%{box-shadow:0 0 44px 2px rgba(54,211,153,.55)}100%{box-shadow:0 0 34px -16px var(--green)}}
+
+  .feed{background:var(--bg2);border:1px solid var(--line);border-radius:16px;padding:6px 6px}
+  .feed h3{margin:8px 12px 4px;font-size:12px;letter-spacing:2px;color:var(--mut);font-weight:700}
+  .ev{display:flex;gap:10px;align-items:baseline;padding:8px 12px;border-top:1px solid #121a2e;font-size:14px}
+  .ev:first-of-type{border-top:0}
+  .ev .r{font-family:var(--mono);font-size:11px;color:var(--mut);min-width:60px}
+  .ev .t{font-family:var(--mono);font-size:11px;color:var(--mut);min-width:42px}
+  .ev .pts{font-family:var(--mono);font-weight:700;min-width:34px}
+  .ev.red .pts{color:var(--red)} .ev.blue .pts{color:var(--blue)}
+  .ev .msg{color:var(--ink)}
+  .feed .empty{padding:16px 12px;color:var(--mut);font-size:13px}
+
+  .offline{position:fixed;inset:0;background:rgba(5,8,18,.92);display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:9;text-align:center;padding:24px}
+  .offline.show{display:flex}
+  .offline h2{margin:0;font-size:22px}
+  .offline code{font-family:var(--mono);background:var(--panel);border:1px solid var(--line);padding:3px 8px;border-radius:7px;color:var(--ink)}
+  .offline p{color:var(--mut);margin:0}
+
+  @media(max-width:760px){
+    .scorebar{grid-template-columns:1fr auto 1fr}
+    .vaults{grid-template-columns:repeat(2,1fr)}
+    .score{font-size:46px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="live"><span class="dot"></span>WAR ROOM &middot; LIVE</span>
+    <h1 class="title">ChaiCart security drill <span class="x">&times;</span> Switch</h1>
+    <span class="spacer"></span>
+    <span class="badge">Round <b id="round">0</b></span>
+    <span class="badge"><b id="secured">0</b>/5 secured</span>
+  </header>
+
+  <section class="scorebar">
+    <div class="team red">
+      <div class="who"><span class="tag"></span>RED TEAM</div>
+      <div class="role">Attacker &middot; finds the holes</div>
+      <div class="score" id="redScore">0</div>
+    </div>
+    <div class="vs"><b>VS</b><span class="lead" id="lead">kickoff</span></div>
+    <div class="team blue">
+      <div class="who">BLUE TEAM<span class="tag"></span></div>
+      <div class="role">Defender &middot; patches, you approve</div>
+      <div class="score" id="blueScore">0</div>
+    </div>
+  </section>
+
+  <section class="vaults" id="vaults"></section>
+
+  <section class="feed">
+    <h3>LIVE FEED</h3>
+    <div id="feed"><div class="empty">Waiting for the match to start&hellip;</div></div>
+  </section>
+</div>
+
+<div class="offline" id="offline">
+  <h2>Arena is offline</h2>
+  <p>Start ChaiCart, then this board goes live.</p>
+  <p><code>./scripts/start.sh</code></p>
+</div>
+
+<script>
+const LABELS = {
+  sqli:"SQL injection", auth:"Forgeable tokens", idor:"Order access (IDOR)",
+  traversal:"Invoice traversal", debug:"Secret leak"
+};
+const ORDER = ["sqli","auth","idor","traversal","debug"];
+function lockSVG(){
+  return `<svg class="lock" viewBox="0 0 48 48" fill="none">
+    <path class="shackle" d="M15 22v-6a9 9 0 0 1 18 0v6" stroke-width="3.2" stroke-linecap="round"/>
+    <rect class="body" x="11" y="22" width="26" height="18" rx="4" stroke-width="3.2"/>
+    <circle cx="24" cy="30" r="2.4" fill="currentColor" stroke="none" opacity=".0"/>
+  </svg>`;
+}
+const vaultsEl = document.getElementById("vaults");
+const nodes = {};
+ORDER.forEach(k=>{
+  const d=document.createElement("div");
+  d.className="vault vuln";
+  d.innerHTML=`<div class="nm">${LABELS[k]}</div>${lockSVG()}<span class="pill">VULNERABLE</span>`;
+  vaultsEl.appendChild(d); nodes[k]=d;
+});
+
+let prev = {};
+let prevRed=0, prevBlue=0;
+
+function cls(v){return v==="FIXED"?"fixed":v==="BROKEN"?"broken":"vuln"}
+
+function render(s){
+  document.getElementById("offline").classList.toggle("show", !s.online);
+  document.getElementById("round").textContent = s.round||0;
+  const map={}; (s.vulns||[]).forEach(v=>map[v.key]=v.verdict);
+  let fixed=0;
+  ORDER.forEach(k=>{
+    const verdict = map[k] || "VULNERABLE";
+    if(verdict==="FIXED") fixed++;
+    const node=nodes[k];
+    const want="vault "+cls(verdict);
+    if(prev[k] && prev[k]!=="FIXED" && verdict==="FIXED"){
+      node.classList.add("flash"); setTimeout(()=>node.classList.remove("flash"),900);
+    }
+    node.className=want;
+    node.querySelector(".pill").textContent=verdict;
+    prev[k]=verdict;
+  });
+  document.getElementById("secured").textContent=fixed;
+
+  const r=document.getElementById("redScore"), b=document.getElementById("blueScore");
+  r.textContent=s.red||0; b.textContent=s.blue||0;
+  if((s.red||0)!==prevRed){r.classList.remove("bump");void r.offsetWidth;r.classList.add("bump");prevRed=s.red||0;}
+  if((s.blue||0)!==prevBlue){b.classList.remove("bump");void b.offsetWidth;b.classList.add("bump");prevBlue=s.blue||0;}
+
+  const lead=document.getElementById("lead");
+  if((s.red||0)>(s.blue||0)) lead.textContent="Red leads";
+  else if((s.blue||0)>(s.red||0)) lead.textContent="Blue leads";
+  else lead.textContent=(s.round?"level":"kickoff");
+
+  const feed=document.getElementById("feed");
+  const log=(s.log||[]).slice().reverse();
+  if(!log.length){feed.innerHTML=`<div class="empty">Waiting for the first move&hellip;</div>`;return;}
+  feed.innerHTML=log.map(e=>{
+    const sign=e.points>=0?"+":"";
+    return `<div class="ev ${e.team}"><span class="r">R${e.round}</span><span class="t">${e.at||""}</span><span class="pts">${sign}${e.points}</span><span class="msg">${escapeHtml(e.reason||"")}</span></div>`;
+  }).join("");
+}
+function escapeHtml(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+
+async function poll(){
+  try{
+    const res=await fetch("/state",{cache:"no-store"});
+    render(await res.json());
+  }catch(e){
+    document.getElementById("offline").classList.add("show");
+  }
+}
+poll(); setInterval(poll,2000);
+</script>
+</body>
+</html>
