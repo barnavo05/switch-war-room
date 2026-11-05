@@ -1,0 +1,10 @@
+services:
+  chaicart:
+    build: .
+    container_name: chaicart-arena
+    # Only reachable from your own laptop (127.0.0.1). Never expose this app.
+    ports:
+      - "127.0.0.1:5050:5050"
+    volumes:
+      - ./app:/app
+    restart: unless-stopped

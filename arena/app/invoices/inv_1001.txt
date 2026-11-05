@@ -1,0 +1,4 @@
+ChaiCart Invoice INV-1001
+Customer: alice
+Item: Masala Chai 250g
+Total: Rs 249

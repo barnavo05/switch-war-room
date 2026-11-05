@@ -1,0 +1,4 @@
+ChaiCart Invoice INV-1002
+Customer: bob
+Item: Kulhad Set (6)
+Total: Rs 399

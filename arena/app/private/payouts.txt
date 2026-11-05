@@ -1,0 +1,2 @@
+Internal payout config. Do not share.
+FLAG{path_traversal_reads_private_files}

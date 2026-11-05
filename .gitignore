@@ -1,0 +1,5 @@
+arena/app/data/*.db
+referee/scoreboard.json
+__pycache__/
+*.pyc
+.DS_Store
